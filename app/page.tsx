@@ -1,69 +1,440 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+import {
+  LayoutDashboard,
+  Users,
+  CalendarDays,
+  Dumbbell,
+  Wallet,
+  ChartNoAxesCombined,
+  Settings,
+  Search,
+  Bell,
+  Plus,
+  ArrowUpRight,
+  Clock3,
+  MoreHorizontal,
+  ChevronRight,
+  UserRound,
+  Activity,
+  Flame,
+  Zap,
+  CircleDollarSign,
+  ClipboardList,
+  MessageCircle,
+} from "lucide-react";
+
+const navigation = [
+  { label: "Главная", icon: LayoutDashboard, href: "/", active: true },
+  { label: "Клиенты", icon: Users, href: "/clients" },
+  { label: "Расписание", icon: CalendarDays, href: "/schedule" },
+  { label: "Тренировки", icon: Dumbbell, href: "/workouts" },
+  { label: "Финансы", icon: Wallet, href: "/finance" },
+  { label: "Аналитика", icon: ChartNoAxesCombined, href: "/analytics" },
+];
+
+const stats = [
+  {
+    label: "Активные клиенты",
+    value: "24",
+    change: "+12%",
+    icon: Users,
+    color: "violet",
+  },
+  {
+    label: "Тренировки",
+    value: "96",
+    change: "+18%",
+    icon: Dumbbell,
+    color: "pink",
+  },
+  {
+    label: "Выручка",
+    value: "182 400 ₽",
+    change: "+22%",
+    icon: CircleDollarSign,
+    color: "blue",
+  },
+  {
+    label: "Посещаемость",
+    value: "94%",
+    change: "+8%",
+    icon: Activity,
+    color: "orange",
+  },
+];
+
+const sessions = [
+  {
+    time: "10:00",
+    name: "Мария Кузнецова",
+    type: "Силовая тренировка",
+    duration: "60 мин",
+    color: "purple",
+  },
+  {
+    time: "12:30",
+    name: "Дмитрий Петров",
+    type: "Функциональный тренинг",
+    duration: "45 мин",
+    color: "pink",
+  },
+  {
+    time: "15:00",
+    name: "Анна Смирнова",
+    type: "Персональная тренировка",
+    duration: "60 мин",
+    color: "blue",
+  },
+];
+
+const clients = [
+  {
+    name: "Иван Петров",
+    detail: "Силовая программа",
+    progress: "+12%",
+    color: "avatar-purple",
+    initials: "ИП",
+  },
+  {
+    name: "Мария Кузнецова",
+    detail: "Программа на похудение",
+    progress: "+8%",
+    color: "avatar-pink",
+    initials: "МК",
+  },
+  {
+    name: "Дмитрий Петров",
+    detail: "Функциональный тренинг",
+    progress: "+15%",
+    color: "avatar-blue",
+    initials: "ДП",
+  },
+];
+
+export default function DashboardPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
+    <main className="app-shell">
+      <aside className="sidebar">
+        <a href="#" className="brand">
+          <span className="brand-mark">EA</span>
+          <span className="brand-name">FORM</span>
+          <small>YOUR FORM. YOUR RULES.</small>
+        </a>
+
+        <div className="sidebar-label">WORKSPACE</div>
+
+        <nav className="navigation">
+          {navigation.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <Link
+                href={item.href}
+                key={item.label}
+                className={`nav-item ${item.active ? "active" : ""}`}
+              >
+                <Icon size={19} />
+                <span>{item.label}</span>
+                {item.active && <span className="active-indicator" />}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="sidebar-label tools-label">TOOLS</div>
+
+        <nav className="navigation">
+          <a href="#" className="nav-item">
+            <MessageCircle size={19} />
+            <span>Сообщения</span>
+            <span className="nav-badge">3</span>
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+          <a href="#" className="nav-item">
+            <ClipboardList size={19} />
+            <span>Задачи</span>
           </a>
+          <a href="#" className="nav-item">
+            <Settings size={19} />
+            <span>Настройки</span>
+          </a>
+        </nav>
+
+        <div className="sidebar-spacer" />
+
+        <div className="pro-card">
+          <div className="pro-card-icon">
+            <Zap size={20} />
+          </div>
+          <strong>EA FORM PRO</strong>
+          <p>Больше возможностей для вашего фитнес-бизнеса</p>
+          <button className="pro-button">
+            Узнать больше <ArrowUpRight size={14} />
+          </button>
         </div>
-      </main>
-    </div>
+
+        <div className="profile">
+          <div className="profile-avatar">А</div>
+          <div className="profile-info">
+            <strong>Алексей Ежель</strong>
+            <span>Персональный тренер</span>
+          </div>
+          <MoreHorizontal size={19} />
+        </div>
+      </aside>
+
+      <section className="main-area">
+        <header className="topbar">
+          <div className="topbar-title">
+            <span className="topbar-label">WORKSPACE</span>
+            <span className="topbar-current">Главная</span>
+          </div>
+
+          <div className="topbar-actions">
+            <label className="search-box">
+              <Search size={17} />
+              <input placeholder="Поиск..." />
+              <kbd>⌘ K</kbd>
+            </label>
+            <button
+              className="round-button notification-button"
+              aria-label="Уведомления"
+            >
+              <Bell size={18} />
+              <span className="notification-dot" />
+            </button>
+            <div className="topbar-avatar">А</div>
+          </div>
+        </header>
+
+        <div className="dashboard">
+          <section className="welcome-section">
+            <div>
+              <div className="eyebrow">
+                <span className="status-dot" /> ПЯТНИЦА, 14 НОЯБРЯ
+              </div>
+              <h1>
+                Добро пожаловать, Алексей <span className="wave">✦</span>
+              </h1>
+              <p>
+                Управляйте своим фитнес-бизнесом и следите за результатами
+                клиентов.
+              </p>
+            </div>
+
+            <button className="primary-button">
+              <Plus size={18} />
+              Добавить клиента
+            </button>
+          </section>
+
+          <section className="stats-grid">
+            {stats.map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <article className="stat-card" key={stat.label}>
+                  <div className="stat-card-top">
+                    <div className={`stat-icon ${stat.color}`}>
+                      <Icon size={21} />
+                    </div>
+                    <button className="card-more" aria-label="Дополнительно">
+                      <MoreHorizontal size={19} />
+                    </button>
+                  </div>
+                  <div className="stat-value">{stat.value}</div>
+                  <div className="stat-footer">
+                    <span>{stat.label}</span>
+                    <span className="stat-change">
+                      <ArrowUpRight size={13} /> {stat.change}
+                    </span>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className="dashboard-grid">
+            <div className="left-column">
+              <article className="panel sessions-panel">
+                <div className="panel-heading">
+                  <div>
+                    <div className="panel-overline">SCHEDULE</div>
+                    <h2>Ближайшие тренировки</h2>
+                    <p>Ваше расписание на сегодня</p>
+                  </div>
+                  <button
+                    className="round-button small-round"
+                    aria-label="Открыть расписание"
+                  >
+                    <ArrowUpRight size={17} />
+                  </button>
+                </div>
+
+                <div className="session-list">
+                  {sessions.map((session) => (
+                    <div className="session-item" key={session.time}>
+                      <div className="session-time">{session.time}</div>
+                      <div className={`session-marker ${session.color}`} />
+                      <div className="session-info">
+                        <strong>{session.name}</strong>
+                        <span>
+                          {session.type} · {session.duration}
+                        </span>
+                      </div>
+                      <ChevronRight size={17} className="subtle-icon" />
+                    </div>
+                  ))}
+                </div>
+
+                <button className="panel-link">
+                  Открыть расписание <ArrowUpRight size={15} />
+                </button>
+              </article>
+
+              <article className="panel clients-panel">
+                <div className="panel-heading">
+                  <div>
+                    <div className="panel-overline">YOUR COMMUNITY</div>
+                    <h2>Последняя активность клиентов</h2>
+                    <p>Прогресс и результаты ваших подопечных</p>
+                  </div>
+                  <button
+                    className="round-button small-round"
+                    aria-label="Открыть клиентов"
+                  >
+                    <ArrowUpRight size={17} />
+                  </button>
+                </div>
+
+                <div className="clients-list">
+                  {clients.map((client) => (
+                    <div className="client-item" key={client.name}>
+                      <div className={`client-avatar ${client.color}`}>
+                        {client.initials}
+                      </div>
+                      <div className="client-info">
+                        <strong>{client.name}</strong>
+                        <span>{client.detail}</span>
+                      </div>
+                      <div className="client-progress">
+                        <span>{client.progress}</span>
+                        <small>прогресс</small>
+                      </div>
+                      <ChevronRight size={17} className="subtle-icon" />
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </div>
+
+            <div className="right-column">
+              <article className="panel overview-panel">
+                <div className="panel-heading">
+                  <div>
+                    <div className="panel-overline">BUSINESS OVERVIEW</div>
+                    <h2>Обзор абонементов</h2>
+                  </div>
+                  <button
+                    className="round-button small-round"
+                    aria-label="Подробнее"
+                  >
+                    <ArrowUpRight size={17} />
+                  </button>
+                </div>
+
+                <div className="agreement-bar">
+                  <div className="agreement-active" />
+                  <div className="agreement-inactive" />
+                </div>
+
+                <div className="overview-numbers">
+                  <div>
+                    <strong>18</strong>
+                    <span>Активных абонементов</span>
+                  </div>
+                  <div>
+                    <strong>6</strong>
+                    <span>Скоро закончатся</span>
+                  </div>
+                </div>
+              </article>
+
+              <article className="panel source-panel">
+                <div className="panel-heading">
+                  <div>
+                    <div className="panel-overline">CLIENT ACTIVITY</div>
+                    <h2>Активность клиентов</h2>
+                  </div>
+                  <button
+                    className="round-button small-round"
+                    aria-label="Подробнее"
+                  >
+                    <ArrowUpRight size={17} />
+                  </button>
+                </div>
+
+                <div className="activity-bars">
+                  <div className="activity-bar bar-one" />
+                  <div className="activity-bar bar-two" />
+                  <div className="activity-bar bar-three" />
+                </div>
+
+                <div className="activity-labels">
+                  <div>
+                    <strong>72%</strong>
+                    <span>Посещаемость</span>
+                  </div>
+                  <div>
+                    <strong>18</strong>
+                    <span>Активных</span>
+                  </div>
+                  <div>
+                    <strong>6</strong>
+                    <span>Новых</span>
+                  </div>
+                </div>
+              </article>
+
+              <article className="assistant-panel">
+                <div className="assistant-heading">
+                  <div className="assistant-logo">EA</div>
+                  <div>
+                    <strong>EA FORM Assistant</strong>
+                    <span>Ваш бизнес под контролем</span>
+                  </div>
+                  <ArrowUpRight size={18} />
+                </div>
+
+                <div className="assistant-suggestions">
+                  <div className="suggestion-card">
+                    <Flame size={20} />
+                    <strong>Проверьте прогресс</strong>
+                    <span>Результаты клиентов</span>
+                  </div>
+                  <div className="suggestion-card">
+                    <Zap size={20} />
+                    <strong>Развивайте бизнес</strong>
+                    <span>Новые возможности</span>
+                  </div>
+                </div>
+
+                <div className="assistant-input">
+                  <span>Скоро здесь появится помощник...</span>
+                  <div>
+                    <Plus size={18} />
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <footer className="dashboard-footer">
+            <span>EA FORM © 2026</span>
+            <span>YOUR FORM. YOUR RULES.</span>
+          </footer>
+        </div>
+      </section>
+    </main>
   );
 }
