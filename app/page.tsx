@@ -1,4 +1,7 @@
 import Link from "next/link";
+import LogoutButton from "./components/LogoutButton";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 import {
   LayoutDashboard,
@@ -112,7 +115,25 @@ const clients = [
   },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
+  const trainerName = profile?.full_name || "Тренер";
+  const trainerInitial = trainerName.trim().charAt(0).toUpperCase() || "Т";
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -174,12 +195,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="profile">
-          <div className="profile-avatar">А</div>
+          <div className="profile-avatar">{trainerInitial}</div>
           <div className="profile-info">
-            <strong>Алексей Ежель</strong>
+            <strong>{trainerName}</strong>
             <span>Персональный тренер</span>
           </div>
           <MoreHorizontal size={19} />
+        </div>
+                <div className="sidebar-logout">
+          <LogoutButton />
         </div>
       </aside>
 
@@ -203,7 +227,7 @@ export default function DashboardPage() {
               <Bell size={18} />
               <span className="notification-dot" />
             </button>
-            <div className="topbar-avatar">А</div>
+            <div className="topbar-avatar">{trainerInitial}</div>
           </div>
         </header>
 
@@ -214,7 +238,7 @@ export default function DashboardPage() {
                 <span className="status-dot" /> ПЯТНИЦА, 14 НОЯБРЯ
               </div>
               <h1>
-                Добро пожаловать, Алексей <span className="wave">✦</span>
+                Добро пожаловать, {trainerName} <span className="wave">✦</span>
               </h1>
               <p>
                 Управляйте своим фитнес-бизнесом и следите за результатами

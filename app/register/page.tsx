@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -42,53 +43,75 @@ export default function RegisterPage() {
       router.push("/");
       router.refresh();
     } else {
-      setMessage("Регистрация почти завершена! Проверь почту и подтверди email.");
+      setMessage(
+        "Регистрация почти завершена! Проверь почту и подтверди email."
+      );
     }
   }
 
   return (
-    <main style={{ maxWidth: 420, margin: "80px auto", padding: 24 }}>
-      <h1>EA FORM</h1>
-      <h2>Регистрация тренера</h2>
+    <main className="auth-page">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <div className="auth-brand-name">
+            EA <span>FORM</span>
+          </div>
+          <p>YOUR FORM. YOUR RULES.</p>
+        </div>
 
-      <form onSubmit={handleRegister}>
-        <input
-          required
-          placeholder="Ваше имя"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 12, marginBottom: 12 }}
-        />
+        <div className="auth-heading">
+          <h1>Создать аккаунт</h1>
+          <p>Начни управлять своими клиентами и тренировками</p>
+        </div>
 
-        <input
-          required
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 12, marginBottom: 12 }}
-        />
+        <form className="auth-form" onSubmit={handleRegister}>
+          <div className="auth-field">
+            <label htmlFor="fullName">Ваше имя</label>
+            <input
+              id="fullName"
+              required
+              placeholder="Алексей"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </div>
 
-        <input
-          required
-          type="password"
-          minLength={6}
-          placeholder="Пароль (минимум 6 символов)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 12, marginBottom: 12 }}
-        />
+          <div className="auth-field">
+            <label htmlFor="registerEmail">Email</label>
+            <input
+              id="registerEmail"
+              required
+              type="email"
+              placeholder="example@mail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: "100%", padding: 12, cursor: "pointer" }}
-        >
-          {loading ? "Регистрируем..." : "Создать аккаунт"}
-        </button>
-      </form>
+          <div className="auth-field">
+            <label htmlFor="registerPassword">Пароль</label>
+            <input
+              id="registerPassword"
+              required
+              type="password"
+              minLength={6}
+              placeholder="Минимум 6 символов"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-      {message && <p style={{ marginTop: 16 }}>{message}</p>}
+          <button className="auth-submit" type="submit" disabled={loading}>
+            {loading ? "Создаём аккаунт..." : "Создать аккаунт"}
+          </button>
+        </form>
+
+        {message && <p className="auth-message">{message}</p>}
+
+        <p className="auth-footer">
+          Уже есть аккаунт? <Link href="/login">Войти</Link>
+        </p>
+      </div>
     </main>
   );
 }
