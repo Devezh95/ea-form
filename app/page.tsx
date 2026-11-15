@@ -91,29 +91,7 @@ const sessions = [
   },
 ];
 
-const clients = [
-  {
-    name: "Иван Петров",
-    detail: "Силовая программа",
-    progress: "+12%",
-    color: "avatar-purple",
-    initials: "ИП",
-  },
-  {
-    name: "Мария Кузнецова",
-    detail: "Программа на похудение",
-    progress: "+8%",
-    color: "avatar-pink",
-    initials: "МК",
-  },
-  {
-    name: "Дмитрий Петров",
-    detail: "Функциональный тренинг",
-    progress: "+15%",
-    color: "avatar-blue",
-    initials: "ДП",
-  },
-];
+
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -134,6 +112,42 @@ export default async function DashboardPage() {
 
   const trainerName = profile?.full_name || "Тренер";
   const trainerInitial = trainerName.trim().charAt(0).toUpperCase() || "Т";
+  const { count: activeClientsCount, error: clientsCountError } = await supabase
+    .from("clients")
+    .select("*", { count: "exact", head: true })
+    .eq("trainer_id", user.id)
+    .eq("status", "active");
+
+  if (clientsCountError) {
+    console.error("Ошибка загрузки количества клиентов:", clientsCountError);
+  }
+  const { data: clientsData, error: clientsError } = await supabase
+  .from("clients")
+  .select("id, full_name, goal, status")
+  .eq("trainer_id", user.id)
+  .order("created_at", { ascending: false })
+  .limit(3);
+
+if (clientsError) {
+  console.error("Ошибка загрузки клиентов:", clientsError);
+}
+
+const avatarColors = ["avatar-purple", "avatar-pink", "avatar-blue"];
+
+const dashboardClients = (clientsData ?? []).map((client, index) => ({
+  id: client.id,
+  name: client.full_name,
+  detail: client.goal || "Программа не назначена",
+  progress: "—",
+  color: avatarColors[index % avatarColors.length],
+  initials: client.full_name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part: string) => part[0])
+    .join("")
+    .toUpperCase(),
+}));
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -202,7 +216,7 @@ export default async function DashboardPage() {
           </div>
           <MoreHorizontal size={19} />
         </div>
-                <div className="sidebar-logout">
+        <div className="sidebar-logout">
           <LogoutButton />
         </div>
       </aside>
@@ -246,10 +260,10 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <button className="primary-button">
+            <Link href="/clients" className="primary-button">
               <Plus size={18} />
               Добавить клиента
-            </button>
+            </Link>
           </section>
 
           <section className="stats-grid">
@@ -266,7 +280,11 @@ export default async function DashboardPage() {
                       <MoreHorizontal size={19} />
                     </button>
                   </div>
-                  <div className="stat-value">{stat.value}</div>
+                  <div className="stat-value">
+                    {stat.label === "Активные клиенты"
+                      ? (activeClientsCount ?? 0)
+                      : stat.value}
+                  </div>
                   <div className="stat-footer">
                     <span>{stat.label}</span>
                     <span className="stat-change">
@@ -332,22 +350,28 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="clients-list">
-                  {clients.map((client) => (
-                    <div className="client-item" key={client.name}>
-                      <div className={`client-avatar ${client.color}`}>
-                        {client.initials}
-                      </div>
-                      <div className="client-info">
-                        <strong>{client.name}</strong>
-                        <span>{client.detail}</span>
-                      </div>
-                      <div className="client-progress">
-                        <span>{client.progress}</span>
-                        <small>прогресс</small>
-                      </div>
-                      <ChevronRight size={17} className="subtle-icon" />
-                    </div>
-                  ))}
+                  <div className="clients-list">
+  {dashboardClients.length === 0 ? (
+    <p>Пока нет добавленных клиентов</p>
+  ) : (
+    dashboardClients.map((client) => (
+      <div className="client-item" key={client.id}>
+        <div className={`client-avatar ${client.color}`}>
+          {client.initials}
+        </div>
+        <div className="client-info">
+          <strong>{client.name}</strong>
+          <span>{client.detail}</span>
+        </div>
+        <div className="client-progress">
+          <span>{client.progress}</span>
+          <small>прогресс</small>
+        </div>
+        <ChevronRight size={17} className="subtle-icon" />
+      </div>
+    ))
+  )}
+</div>
                 </div>
               </article>
             </div>

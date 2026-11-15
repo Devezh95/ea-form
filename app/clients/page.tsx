@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -16,11 +15,13 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type ClientStatus = "Активен" | "Пауза" | "Завершён";
 
 type Client = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   program: string;
@@ -32,123 +33,144 @@ type Client = {
   avatar: string;
 };
 
-const initialClients: Client[] = [
-  {
-    id: 1,
-    name: "Мария Кузнецова",
-    email: "maria@example.com",
-    program: "Снижение веса",
-    status: "Активен",
-    sessions: 8,
-    totalSessions: 12,
-    payment: "Оплачен",
-    initials: "МК",
-    avatar: "purple",
-  },
-  {
-    id: 2,
-    name: "Дмитрий Петров",
-    email: "dmitry@example.com",
-    program: "Набор мышечной массы",
-    status: "Активен",
-    sessions: 5,
-    totalSessions: 10,
-    payment: "Оплачен",
-    initials: "ДП",
-    avatar: "blue",
-  },
-  {
-    id: 3,
-    name: "Анна Смирнова",
-    email: "anna@example.com",
-    program: "Функциональный тренинг",
-    status: "Активен",
-    sessions: 3,
-    totalSessions: 8,
-    payment: "Оплачен",
-    initials: "АС",
-    avatar: "pink",
-  },
-  {
-    id: 4,
-    name: "Иван Петров",
-    email: "ivan@example.com",
-    program: "Силовая программа",
-    status: "Пауза",
-    sessions: 2,
-    totalSessions: 12,
-    payment: "Ожидает",
-    initials: "ИП",
-    avatar: "green",
-  },
-  {
-    id: 5,
-    name: "Екатерина Волкова",
-    email: "kate@example.com",
-    program: "Общая физическая подготовка",
-    status: "Активен",
-    sessions: 10,
-    totalSessions: 12,
-    payment: "Оплачен",
-    initials: "ЕВ",
-    avatar: "orange",
-  },
-  {
-    id: 6,
-    name: "Александр Морозов",
-    email: "alex@example.com",
-    program: "Силовая программа",
-    status: "Завершён",
-    sessions: 12,
-    totalSessions: 12,
-    payment: "Оплачен",
-    initials: "АМ",
-    avatar: "cyan",
-  },
-];
-
 const filters = ["Все", "Активен", "Пауза", "Завершён"] as const;
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState(initialClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number]>("Все");
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    async function loadClients() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        setError("Не удалось определить пользователя.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, full_name, email, goal, status")
+        .eq("trainer_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        setError("Не удалось загрузить клиентов: " + error.message);
+        setLoading(false);
+        return;
+      }
+
+      const mappedClients: Client[] = (data ?? []).map((client) => ({
+        id: client.id,
+        name: client.full_name,
+        email: client.email ?? "",
+        program: client.goal || "Программа не назначена",
+        status:
+          client.status === "pause"
+            ? "Пауза"
+            : client.status === "completed"
+              ? "Завершён"
+              : "Активен",
+        sessions: 0,
+        totalSessions: 0,
+        payment: "Не указана",
+        initials: client.full_name
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((part: string) => part[0])
+          .join("")
+          .toUpperCase(),
+        avatar: "purple",
+      }));
+
+      setClients(mappedClients);
+      setLoading(false);
+    }
+
+    loadClients();
+  }, []);
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
       const matchesSearch =
         client.name.toLowerCase().includes(search.toLowerCase()) ||
         client.email.toLowerCase().includes(search.toLowerCase());
 
-      const matchesFilter =
-        filter === "Все" || client.status === filter;
+      const matchesFilter = filter === "Все" || client.status === filter;
 
       return matchesSearch && matchesFilter;
     });
   }, [clients, search, filter]);
 
-  const activeCount = clients.filter((client) => client.status === "Активен").length;
-  const pauseCount = clients.filter((client) => client.status === "Пауза").length;
+  const activeCount = clients.filter(
+    (client) => client.status === "Активен",
+  ).length;
 
-  function addClient() {
+  const pauseCount = clients.filter(
+    (client) => client.status === "Пауза",
+  ).length;
+
+  async function addClient() {
     if (!newName.trim() || !newEmail.trim()) return;
 
-    const nameParts = newName.trim().split(" ");
-    const initials = nameParts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+    setError("");
+
+    const supabase = createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      setError("Не удалось определить пользователя.");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("clients")
+      .insert({
+        trainer_id: user.id,
+        full_name: newName.trim(),
+        email: newEmail.trim(),
+        status: "active",
+      })
+      .select("id, full_name, email, goal, status")
+      .single();
+
+    if (error) {
+      setError("Не удалось добавить клиента: " + error.message);
+      return;
+    }
+
+    const nameParts = data.full_name.trim().split(/\s+/);
 
     const newClient: Client = {
-      id: Date.now(),
-      name: newName.trim(),
-      email: newEmail.trim(),
-      program: "Программа не назначена",
+      id: data.id,
+      name: data.full_name,
+      email: data.email ?? "",
+      program: data.goal || "Программа не назначена",
       status: "Активен",
       sessions: 0,
       totalSessions: 0,
-      payment: "Ожидает",
-      initials,
+      payment: "Не указана",
+      initials: nameParts
+        .slice(0, 2)
+        .map((part: string) => part[0])
+        .join("")
+        .toUpperCase(),
       avatar: "purple",
     };
 
@@ -164,12 +186,17 @@ export default function ClientsPage() {
     <main className="clients-page">
       <header className="clients-header">
         <div>
-          <div className="eyebrow"><span className="status-dot" /> YOUR COMMUNITY</div>
+          <div className="eyebrow">
+            <span className="status-dot" /> YOUR COMMUNITY
+          </div>
           <h1>Клиенты</h1>
           <p>Управляйте клиентской базой и следите за прогрессом подопечных.</p>
         </div>
 
-        <button className="primary-button" onClick={() => setShowAddModal(true)}>
+        <button
+          className="primary-button"
+          onClick={() => setShowAddModal(true)}
+        >
           <Plus size={18} />
           Добавить клиента
         </button>
@@ -177,30 +204,40 @@ export default function ClientsPage() {
 
       <section className="client-stats">
         <article className="client-stat-card">
-          <div className="client-stat-icon violet"><Users size={21} /></div>
+          <div className="client-stat-icon violet">
+            <Users size={21} />
+          </div>
           <span>Всего клиентов</span>
           <strong>{clients.length}</strong>
           <small>В вашей базе</small>
         </article>
 
         <article className="client-stat-card">
-          <div className="client-stat-icon green"><UserCheck size={21} /></div>
+          <div className="client-stat-icon green">
+            <UserCheck size={21} />
+          </div>
           <span>Активные клиенты</span>
           <strong>{activeCount}</strong>
           <small>Сейчас занимаются</small>
         </article>
 
         <article className="client-stat-card">
-          <div className="client-stat-icon pink"><Clock3 size={21} /></div>
+          <div className="client-stat-icon pink">
+            <Clock3 size={21} />
+          </div>
           <span>На паузе</span>
           <strong>{pauseCount}</strong>
           <small>Временно не занимаются</small>
         </article>
 
         <article className="client-stat-card">
-          <div className="client-stat-icon blue"><Wallet size={21} /></div>
+          <div className="client-stat-icon blue">
+            <Wallet size={21} />
+          </div>
           <span>Ожидают оплаты</span>
-          <strong>{clients.filter((client) => client.payment === "Ожидает").length}</strong>
+          <strong>
+            {clients.filter((client) => client.payment === "Ожидает").length}
+          </strong>
           <small>Требуют внимания</small>
         </article>
       </section>
@@ -221,7 +258,10 @@ export default function ClientsPage() {
                 placeholder="Найти клиента..."
               />
               {search && (
-                <button onClick={() => setSearch("")} aria-label="Очистить поиск">
+                <button
+                  onClick={() => setSearch("")}
+                  aria-label="Очистить поиск"
+                >
                   <X size={15} />
                 </button>
               )}
@@ -247,6 +287,15 @@ export default function ClientsPage() {
         </div>
 
         <div className="clients-table-wrap">
+          {loading && (
+            <div className="clients-empty">Загружаем клиентов...</div>
+          )}
+
+          {error && (
+            <div className="clients-empty">
+              <strong>{error}</strong>
+            </div>
+          )}
           <table className="clients-table">
             <thead>
               <tr>
@@ -260,71 +309,96 @@ export default function ClientsPage() {
             </thead>
 
             <tbody>
-              {filteredClients.map((client) => (
-                <tr key={client.id}>
-                  <td>
-                    <div className="table-client">
-                      <div className={`client-avatar ${client.avatar}`}>
-                        {client.initials}
+              {!loading &&
+                !error &&
+                filteredClients.map((client) => (
+                  <tr key={client.id}>
+                    <td>
+                      <div className="table-client">
+                        <div className={`client-avatar ${client.avatar}`}>
+                          {client.initials}
+                        </div>
+                        <div>
+                          <Link
+                            href={`/clients/${client.id}`}
+                            className="client-name-link"
+                          >
+                            {client.name}
+                          </Link>
+                          <span>{client.email}</span>
+                        </div>
                       </div>
-                      <div>
-                        <strong>{client.name}</strong>
-                        <span>{client.email}</span>
+                    </td>
+
+                    <td>
+                      <span className="program-name">{client.program}</span>
+                    </td>
+
+                    <td>
+                      <span
+                        className={`client-status ${client.status === "Активен" ? "status-active" : client.status === "Пауза" ? "status-pause" : "status-ended"}`}
+                      >
+                        <span />
+                        {client.status}
+                      </span>
+                    </td>
+
+                    <td>
+                      <div className="package-progress">
+                        <strong>
+                          {client.sessions}/{client.totalSessions || "—"}
+                        </strong>
+                        <div className="progress-track">
+                          <div
+                            style={{
+                              width: `${client.totalSessions ? (client.sessions / client.totalSessions) * 100 : 0}%`,
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td>
-                    <span className="program-name">{client.program}</span>
-                  </td>
+                    <td>
+                      <span
+                        className={`payment-status ${client.payment === "Оплачен" ? "paid" : "pending"}`}
+                      >
+                        {client.payment}
+                      </span>
+                    </td>
 
-                  <td>
-                    <span className={`client-status ${client.status === "Активен" ? "status-active" : client.status === "Пауза" ? "status-pause" : "status-ended"}`}>
-                      <span />
-                      {client.status}
-                    </span>
-                  </td>
-
-                  <td>
-                    <div className="package-progress">
-                      <strong>{client.sessions}/{client.totalSessions || "—"}</strong>
-                      <div className="progress-track">
-                        <div
-                          style={{
-                            width: `${client.totalSessions ? (client.sessions / client.totalSessions) * 100 : 0}%`,
-                          }}
-                        />
+                    <td>
+                      <div className="table-actions">
+                        <Link
+                          href={`/clients/${client.id}`}
+                          className="client-open"
+                          aria-label={`Открыть ${client.name}`}
+                        >
+                          <ArrowUpRight size={17} />
+                        </Link>
+                        <button
+                          className="table-more"
+                          aria-label="Дополнительные действия"
+                        >
+                          <MoreHorizontal size={19} />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-
-                  <td>
-                    <span className={`payment-status ${client.payment === "Оплачен" ? "paid" : "pending"}`}>
-                      {client.payment}
-                    </span>
-                  </td>
-
-                  <td>
-                    <div className="table-actions">
-                      <Link href={`/clients/${client.id}`} className="client-open" aria-label={`Открыть ${client.name}`}>
-                        <ArrowUpRight size={17} />
-                      </Link>
-                      <button className="table-more" aria-label="Дополнительные действия">
-                        <MoreHorizontal size={19} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
 
-          {filteredClients.length === 0 && (
+          {!loading && !error && filteredClients.length === 0 && (
             <div className="clients-empty">
               <Users size={30} />
               <strong>Клиенты не найдены</strong>
               <span>Попробуйте изменить поисковый запрос или фильтр.</span>
-              <button onClick={() => { setSearch(""); setFilter("Все"); }}>
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("Все");
+                }}
+              >
                 Сбросить фильтры
               </button>
             </div>
@@ -332,21 +406,32 @@ export default function ClientsPage() {
         </div>
 
         <div className="clients-table-footer">
-          <span>Показано {filteredClients.length} из {clients.length} клиентов</span>
-          <span>EA FORM <ChevronRight size={13} /></span>
+          <span>
+            Показано {filteredClients.length} из {clients.length} клиентов
+          </span>
+          <span>
+            EA FORM <ChevronRight size={13} />
+          </span>
         </div>
       </section>
 
       {showAddModal && (
         <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
-          <div className="add-client-modal" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="add-client-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="modal-heading">
               <div>
                 <div className="panel-overline">NEW CLIENT</div>
                 <h2>Добавить клиента</h2>
                 <p>Создайте карточку нового подопечного.</p>
               </div>
-              <button className="modal-close" onClick={() => setShowAddModal(false)} aria-label="Закрыть">
+              <button
+                className="modal-close"
+                onClick={() => setShowAddModal(false)}
+                aria-label="Закрыть"
+              >
                 <X size={19} />
               </button>
             </div>
@@ -372,7 +457,10 @@ export default function ClientsPage() {
             </label>
 
             <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setShowAddModal(false)}>
+              <button
+                className="modal-cancel"
+                onClick={() => setShowAddModal(false)}
+              >
                 Отмена
               </button>
               <button
